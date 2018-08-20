@@ -2,11 +2,12 @@ package main
 
 import (
 	"flag"
+	"log"
 	"os"
 	"time"
 
 	"github.com/coreos/go-systemd/login1"
-	"github.com/golang/glog"
+	"github.com/monopole/kube-controller-demo/common"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -15,8 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-
-	"github.com/aaronlevy/kube-controller-demo/common"
 )
 
 const nodeNameEnv = "NODE_NAME"
@@ -26,34 +25,31 @@ func main() {
 	// However, allow the use of a local kubeconfig as this can make local development & testing easier.
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kubeconfig file")
 
-	// We log to stderr because glog will default to logging to a file.
-	// By setting this debugging is easier via `kubectl logs`
-	flag.Set("logtostderr", "true")
 	flag.Parse()
 
 	// The node name is necessary so we can identify "self".
 	// This environment variable is assumed to be set via the pod downward-api, however it can be manually set during testing
 	nodeName := os.Getenv(nodeNameEnv)
 	if nodeName == "" {
-		glog.Fatalf("Missing required environment variable %s", nodeNameEnv)
+		log.Fatalf("Missing required environment variable %s", nodeNameEnv)
 	}
 
 	// Build the client config - optionally using a provided kubeconfig file.
 	config, err := common.GetClientConfig(*kubeconfig)
 	if err != nil {
-		glog.Fatalf("Failed to load client config: %v", err)
+		log.Fatalf("Failed to load client config: %v", err)
 	}
 
 	// Construct the Kubernetes client
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		glog.Fatalf("Failed to create kubernetes client: %v", err)
+		log.Fatalf("Failed to create kubernetes client: %v", err)
 	}
 
 	// Open a dbus connection for triggering a system reboot
 	dbusConn, err := login1.New()
 	if err != nil {
-		glog.Fatalf("Failed to create dbus connection")
+		log.Fatalf("Failed to create dbus connection")
 	}
 
 	agent := newRebootAgent(nodeName, client, dbusConn)
@@ -63,7 +59,7 @@ func main() {
 	// If we get an event for "self" that is the only state we need, and no further cache syncing
 	// is required. If we do start caring about cache state, we should implement a workqueue
 	// and wait to process queue until cached has synced. See reboot-controller for example.
-	glog.Info("Starting Reboot Agent")
+	log.Println("Starting Reboot Agent")
 	agent.controller.Run(wait.NeverStop)
 }
 
@@ -79,21 +75,25 @@ func newRebootAgent(nodeName string, client kubernetes.Interface, dbusConn *logi
 		dbusConn: dbusConn,
 	}
 
-	// We only care about updates to "self" so create a field selector based on the current node name
+	// We only care about updates to "self" so create a field selector
+	// based on the current node name
 	nodeNameFS := fields.OneTermEqualSelector("metadata.name", nodeName).String()
 
-	// We do not need the cache store of the informer. In this case we just want the controller event handlers.
+	// We do not need the cache store of the informer.
+	// In this case we just want the controller event handlers.
 	_, controller := cache.NewInformer(
 		&cache.ListWatch{
+			// Knows how to list resources.
 			ListFunc: func(lo metav1.ListOptions) (runtime.Object, error) {
 				// Add the field selector containgin our node name to our list options
 				lo.FieldSelector = nodeNameFS
-				return client.Core().Nodes().List(lo)
+				return client.CoreV1().Nodes().List(lo)
 			},
+			// Knows how to watch resources.
 			WatchFunc: func(lo metav1.ListOptions) (watch.Interface, error) {
-				// Add the field selector containgin our node name to our list options
+				// Add the field selector containing our node name to our list options
 				lo.FieldSelector = nodeNameFS
-				return client.Core().Nodes().Watch(lo)
+				return client.CoreV1().Nodes().Watch(lo)
 			},
 		},
 		// The types of objects this informer will return
@@ -105,7 +105,8 @@ func newRebootAgent(nodeName string, client kubernetes.Interface, dbusConn *logi
 		10*time.Second,
 		// Callback Functions to trigger on add/update/delete
 		cache.ResourceEventHandlerFuncs{
-			// AddFunc: func(obj interface{}) {}
+			AddFunc:    agent.handleAdd,
+			DeleteFunc: agent.handleDelete,
 			UpdateFunc: agent.handleUpdate,
 			// DeleteFunc: func(obj interface{}) {}
 		},
@@ -116,68 +117,89 @@ func newRebootAgent(nodeName string, client kubernetes.Interface, dbusConn *logi
 	return agent
 }
 
+func (a *rebootAgent) handleAdd(obj interface{}) {
+	node, err := common.CopyObjToNode(obj)
+	if err != nil {
+		log.Printf("Failed to copy Node object in handleAdd: %v", err)
+		return
+	}
+	log.Printf("Received add for node: %s", node.Name)
+}
+
+func (a *rebootAgent) handleDelete(obj interface{}) {
+	node, err := common.CopyObjToNode(obj)
+	if err != nil {
+		log.Printf("Failed to copy Node object in handleDelete: %v", err)
+		return
+	}
+	log.Printf("Received delete for node: %s", node.Name)
+}
+
 func (a *rebootAgent) handleUpdate(oldObj, newObj interface{}) {
-	// In an `UpdateFunc` handler, before doing any work, you might try and determine if there has ben an actual change between the oldObj and newObj.
-	// This could mean checking the `resourceVersion` of the objects, and if they are the same - there has been no change to the object.
+	// In an `UpdateFunc` handler, before doing any work, you might try and determine if there has
+	// ben an actual change between the oldObj and newObj.
+	// This could mean checking the `resourceVersion` of the objects, and if they are the same -
+	// there has been no change to the object.
 	// Or it might mean only inspecting fields that you care about (as seen below).
 	// However, you should be careful when ignoring updates to objects, as it is possible that prior update was missed,
 	// and if you continue to ignore the objects, you will never fully sync desired state.
 
 	// Because we are about to make changes to the object - we make a copy.
-	// You should never mutate the original objects (from the cache.Store) as you are modifying state that has not been persisted via the apiserver.
-	// For example, if you modify the original object, but then your `Update()` call fails - your local cache could now be "wrong".
+	// You should never mutate the original objects (from the cache.Store) as you are modifying state that has
+	// not been persisted via the apiserver.
+	// For example, if you modify the original object, but then your `Update()` call fails - your local cache
+	// could now be "wrong".
 	// Additionally, if using SharedInformers - you are modifying a local cache that could be used by other controllers.
 	node, err := common.CopyObjToNode(newObj)
 	if err != nil {
-		glog.Errorf("Failed to copy Node object: %v", err)
+		log.Printf("Failed to copy Node object: %v", err)
 		return
 	}
+	log.Printf("Received update for node: %s", node.Name)
 
-	glog.V(4).Infof("Received update for node: %s", node.Name)
+	if shouldReboot(node) && !rebootInProgress(node) {
+		log.Println("Reboot requested...")
 
-	if shouldReboot(node) {
-		glog.Info("Reboot requested...")
+		// Set RebootInProgress
+		node.Annotations[common.AnnoRebootInProgress] = "yeah baby"
+		delete(node.Annotations, common.AnnoRebootRequested)
+		delete(node.Annotations, common.AnnoRebootNow)
 
-		// Set "reboot in progress" and clear reboot needed / reboot
-		node.Annotations[common.RebootInProgressAnnotation] = ""
-		delete(node.Annotations, common.RebootNeededAnnotation)
-		delete(node.Annotations, common.RebootAnnotation)
-
-		// Update the node object
-		_, err := a.client.Core().Nodes().Update(node)
+		_, err := a.client.CoreV1().Nodes().Update(node)
 		if err != nil {
-			glog.Errorf("Failed to set %s annotation: %v", common.RebootInProgressAnnotation, err)
+			log.Printf("Failed to set %s annotation: %v", common.AnnoRebootInProgress, err)
 			return // If we cannot update the state - do not reboot
 		}
 
 		// TODO(aaron): We should drain the node (this is really just for demo purposes - but would be good to demonstrate)
 
-		glog.Infof("Rebooting node...")
-		a.dbusConn.Reboot(false)
-		select {} // Wait for machine to reboot
+		log.Println("Would call reboot here... sleeping for 10")
+		time.Sleep(10 * time.Second)
+		log.Println("Waking.")
+		return
+		// a.dbusConn.Reboot(false)
+		// select {} // Wait for machine to reboot
 	}
 
-	// Reboot complete - clear the rebootInProgress annotation
-	// This is a niave assumption: the call to reboot is blocking - if we've reached this, assume the node has restarted.
 	if rebootInProgress(node) {
-		glog.Info("Clearing in-progress reboot annotation")
-		delete(node.Annotations, common.RebootInProgressAnnotation)
-		_, err := a.client.Core().Nodes().Update(node)
+		// Assume the node just rebooted.  Clear RebootInProgress
+		log.Println("Clearing in-progress reboot annotation")
+		delete(node.Annotations, common.AnnoRebootInProgress)
+
+		_, err := a.client.CoreV1().Nodes().Update(node)
 		if err != nil {
-			glog.Errorf("Failed to remove %s annotation: %v", common.RebootInProgressAnnotation, err)
+			log.Printf("Failed to remove %s annotation: %v", common.AnnoRebootInProgress, err)
 			return
 		}
 	}
 }
 
 func shouldReboot(node *v1.Node) bool {
-	_, reboot := node.Annotations[common.RebootAnnotation]
-	_, inProgress := node.Annotations[common.RebootInProgressAnnotation]
-
-	return reboot && !inProgress
+	_, reboot := node.Annotations[common.AnnoRebootNow]
+	return reboot
 }
 
 func rebootInProgress(node *v1.Node) bool {
-	_, inProgress := node.Annotations[common.RebootInProgressAnnotation]
+	_, inProgress := node.Annotations[common.AnnoRebootInProgress]
 	return inProgress
 }

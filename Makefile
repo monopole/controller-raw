@@ -1,10 +1,6 @@
 GOFILES:=$(shell find . -name '*.go' | grep -v -E '(./vendor)')
 
-all: \
-	bin/linux/reboot-agent \
-	bin/linux/reboot-controller \
-	#bin/darwin/reboot-agent \
-	#bin/darwin/reboot-controller
+all: bin/linux/reboot-agent bin/linux/reboot-controller
 
 images: GVERSION=$(shell $(CURDIR)/git-version.sh)
 images: bin/linux/reboot-agent bin/linux/reboot-controller
@@ -24,8 +20,8 @@ vendor:
 clean:
 	rm -rf bin
 
-bin/%: LDFLAGS=-X github.com/aaronlevy/kube-controller-demo/common.Version=$(shell $(CURDIR)/git-version.sh)
+bin/%: LDFLAGS=-X github.com/monopole/kube-controller-demo/common.Version=$(shell $(CURDIR)/git-version.sh)
 bin/%: $(GOFILES)
 	mkdir -p $(dir $@)
-	GOOS=$(word 1, $(subst /, ,$*)) GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $@ github.com/aaronlevy/kube-controller-demo/$(notdir $@)
+	GOOS=$(word 1, $(subst /, ,$*)) GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $@ github.com/monopole/kube-controller-demo/$(notdir $@)
 

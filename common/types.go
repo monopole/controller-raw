@@ -1,7 +1,7 @@
 package common
 
 const (
-	RebootAnnotation           = "reboot-agent.v1.demo.local/reboot"
-	RebootNeededAnnotation     = "reboot-agent.v1.demo.local/reboot-needed"
-	RebootInProgressAnnotation = "reboot-agent.v1.demo.local/reboot-in-progress"
+	AnnoRebootRequested  = "reboot-agent.v1.demo.local/reboot-requested"
+	AnnoRebootNow        = "reboot-agent.v1.demo.local/reboot-now"
+	AnnoRebootInProgress = "reboot-agent.v1.demo.local/reboot-in-progress"
 )
