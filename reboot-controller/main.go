@@ -29,7 +29,7 @@ func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kubeconfig file")
 
 	flag.Parse()
-	log.Println("Controller Version 1.0")
+	log.Println("Controller Version 6.0")
 
 	// Build the client config - optionally using a provided kubeconfig file.
 	config, err := common.GetClientConfig(*kubeconfig)
