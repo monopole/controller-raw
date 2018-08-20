@@ -27,7 +27,7 @@ func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kubeconfig file")
 
 	flag.Parse()
-	log.Println("Agent Version 1.0")
+	log.Println("Agent Version 5.0")
 
 	// The node name is necessary so we can identify "self".
 	// This environment variable is assumed to be set via the pod downward-api, however it can be manually set during testing

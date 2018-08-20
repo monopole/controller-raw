@@ -31,7 +31,6 @@ func main() {
 	flag.Parse()
 	log.Println("Controller Version 1.0")
 
-
 	// Build the client config - optionally using a provided kubeconfig file.
 	config, err := common.GetClientConfig(*kubeconfig)
 	if err != nil {
