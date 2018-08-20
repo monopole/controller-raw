@@ -3,6 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/monopole/kube-controller-demo/common"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,10 +15,9 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	lister_v1 "k8s.io/client-go/listers/core/v1"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"log"
-	"time"
 )
 
 // TODO(aaron): make configurable and add MinAvailable
@@ -27,6 +29,8 @@ func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kubeconfig file")
 
 	flag.Parse()
+	log.Println("Controller Version 1.0")
+
 
 	// Build the client config - optionally using a provided kubeconfig file.
 	config, err := common.GetClientConfig(*kubeconfig)

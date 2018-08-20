@@ -25,3 +25,6 @@ bin/%: $(GOFILES)
 	mkdir -p $(dir $@)
 	GOOS=$(word 1, $(subst /, ,$*)) GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $@ github.com/monopole/kube-controller-demo/$(notdir $@)
 
+
+# This assumes docker login --username=monopole --password-stdin
+# enter password then CTRL-D

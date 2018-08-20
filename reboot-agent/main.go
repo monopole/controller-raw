@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -26,6 +27,7 @@ func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kubeconfig file")
 
 	flag.Parse()
+	log.Println("Agent Version 1.0")
 
 	// The node name is necessary so we can identify "self".
 	// This environment variable is assumed to be set via the pod downward-api, however it can be manually set during testing
