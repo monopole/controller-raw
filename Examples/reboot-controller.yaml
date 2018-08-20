@@ -8,6 +8,6 @@ spec:
     spec:
       containers:
       - name: reboot-controller
-        image: monopole/demo-reboot-controller:latest
+        image: monopole/demo-reboot-controller:cca50bdb5aaa3563dd58780df131bb893334e915
         command:
         - /reboot-controller
