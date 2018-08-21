@@ -23,6 +23,7 @@ vendor:
 clean:
 	rm -rf bin/*
 	docker rmi -f `docker images --filter=reference="reboot-*:*" -q`
+	docker rmi -f monopole/reboot-agent:hey
 
 
 bin/%: LDFLAGS=-X github.com/monopole/kube-controller-demo/common.Version=$(shell $(CURDIR)/git-version.sh)
@@ -39,5 +40,11 @@ bin/%: $(GOFILES)
 # enter password then CTRL-D
 .PHONY: push
 push:
-	docker tag `docker images | grep reboot-agent | awk '{printf $$3}'` monopole/reboot-agent:hey
+	docker tag `docker images | grep -m 1 reboot-agent | awk '{printf $$3}'` monopole/reboot-agent:hey
 	docker push monopole/reboot-agent:hey
+
+.PHONY: dockerrun
+dockerrun:
+	docker run -d reboot-agent:
+	docker ps # grab the containerID and use it below
+	docker logs 95987a765ade
