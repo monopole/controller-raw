@@ -6,6 +6,7 @@ GVERSION=$(shell $(CURDIR)/git-version.sh)
 
 # images: GVERSION=$(shell $(CURDIR)/git-version.sh)
 images: bin/reboot-agent bin/reboot-controller
+	echo $GVERSION
 	docker build -f Dockerfile-agent -t reboot-agent:$(GVERSION) .
 	docker build -f Dockerfile-controller -t reboot-controller:$(GVERSION) .
 
@@ -36,3 +37,7 @@ bin/%: $(GOFILES)
 
 # This assumes docker login --username=monopole --password-stdin
 # enter password then CTRL-D
+.PHONY: push
+push:
+	docker tag `docker images | grep reboot-agent | awk '{printf $$3}'` monopole/reboot-agent:hey
+	docker push monopole/reboot-agent:hey
