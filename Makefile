@@ -25,6 +25,7 @@ clean:
 	docker rmi -f `docker images --filter=reference="reboot-*:*" -q`
 	docker rmi -f monopole/reboot-agent:hey
 
+#	curl -X DELETE -u "$user:$pass" https://index.docker.io/v1/repositories/monopole/reboot-agent/
 
 bin/%: LDFLAGS=-X github.com/monopole/kube-controller-demo/common.Version=$(shell $(CURDIR)/git-version.sh)
 bin/%: $(GOFILES)
