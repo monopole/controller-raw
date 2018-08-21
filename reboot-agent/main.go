@@ -22,12 +22,15 @@ import (
 const nodeNameEnv = "NODE_NAME"
 
 func main() {
+	log.Println("Agent Version " + common.Version)
+	log.Println("Sleeping...")
+	time.Sleep(20 * time.Second)
+	log.Println("Working.")
 	// When running as a pod in-cluster, a kubeconfig is not needed. Instead this will make use of the service account injected into the pod.
 	// However, allow the use of a local kubeconfig as this can make local development & testing easier.
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kubeconfig file")
 
 	flag.Parse()
-	log.Println("Agent Version 6.0")
 
 	// The node name is necessary so we can identify "self".
 	// This environment variable is assumed to be set via the pod downward-api, however it can be manually set during testing
@@ -35,6 +38,7 @@ func main() {
 	if nodeName == "" {
 		log.Fatalf("Missing required environment variable %s", nodeNameEnv)
 	}
+	log.Printf("Nodename = %s\n", nodeName)
 
 	// Build the client config - optionally using a provided kubeconfig file.
 	config, err := common.GetClientConfig(*kubeconfig)
