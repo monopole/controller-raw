@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: reboot-agent
-        image: monopole/demo-reboot-agent:0b75fdf4cbf09c70e5cefc8d1cbd872beefb70d5
+        image: monopole/reboot-agent:latest
         env:
           - name: NODE_NAME
             valueFrom:

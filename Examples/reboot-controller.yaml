@@ -8,4 +8,4 @@ spec:
     spec:
       containers:
       - name: reboot-controller
-        image: monopole/demo-reboot-controller:0b75fdf4cbf09c70e5cefc8d1cbd872beefb70d5
+        image: monopole/reboot-controller:latest
