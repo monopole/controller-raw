@@ -23,7 +23,6 @@ vendor:
 clean:
 	rm -rf bin/*
 	docker rmi -f `docker images --filter=reference="reboot-*:*" -q`
-	docker rmi -f monopole/reboot-agent:hey
 
 #	curl -X DELETE -u "$user:$pass" https://index.docker.io/v1/repositories/monopole/reboot-agent/
 
@@ -35,14 +34,6 @@ bin/%: $(GOFILES)
 #	mkdir -p $(dir $@)
 #	GOOS=$(word 1, $(subst /, ,$*)) GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $@ github.com/monopole/kube-controller-demo/$(notdir $@)
 
-
-
-# This assumes docker login --username=monopole --password-stdin
-# enter password then CTRL-D
-.PHONY: push
-push:
-	docker tag `docker images | grep -m 1 reboot-agent | awk '{printf $$3}'` monopole/reboot-agent:hey
-	docker push monopole/reboot-agent:hey
 
 .PHONY: dockerrun
 dockerrun:

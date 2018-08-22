@@ -53,12 +53,12 @@ func main() {
 	}
 
 	// Open a dbus connection for triggering a system reboot
-	dbusConn, err := login1.New()
-	if err != nil {
-		log.Fatalf("Failure to create dbus connection: %v", err)
-	}
+	//dbusConn, err := login1.New()
+	//if err != nil {
+	//	log.Fatalf("Failure to create dbus connection: %v", err)
+	//}
 
-	agent := newRebootAgent(nodeName, client, dbusConn)
+	agent := newRebootAgent(nodeName, client) // , dbusConn)
 
 	// We immediately start processing events even if our cache might not have fully synced.
 	// In this case this is safe because we only care about a single object - our own node.
@@ -75,10 +75,11 @@ type rebootAgent struct {
 	controller cache.Controller
 }
 
-func newRebootAgent(nodeName string, client kubernetes.Interface, dbusConn *login1.Conn) *rebootAgent {
+func newRebootAgent(nodeName string,
+	client kubernetes.Interface /*, dbusConn *login1.Conn */ ) *rebootAgent {
 	agent := &rebootAgent{
 		client:   client,
-		dbusConn: dbusConn,
+	//	dbusConn: dbusConn,
 	}
 
 	// We only care about updates to "self" so create a field selector

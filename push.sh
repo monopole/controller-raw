@@ -25,5 +25,10 @@ pushAllToHub $GVERSION
 
 sed -i -E "s/(reboot-agent:).*/\1$GVERSION/" Examples/reboot-agent.yaml
 
+
+echo " "
+cat Examples/reboot-agent.yaml
+echo " "
 echo ready for
 echo kubectl apply -f Examples/reboot-agent.yaml
+echo kubectl get pods
