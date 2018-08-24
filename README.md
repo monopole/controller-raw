@@ -4,7 +4,8 @@ Fork of aaronlevy/kube-controller-demo
 
 
 Goal is to be able to force the reboot of a node without ssh'ing into the node.
-Instead enter a command like:
+
+Instead one could use `kubectl` like this:
 
 ```
 kubectl annotate --overwrite node \
@@ -72,6 +73,8 @@ gcloud auth application-default login
 
 ```
 gcloud config set project $PROJECT_ID
+gcloud config list
+
 ```
 
 ## Delete a cluster
@@ -97,9 +100,6 @@ scopes=\
 "https://www.googleapis.com/auth/servicecontrol",\
 "https://www.googleapis.com/auth/service.management.readonly",\
 "https://www.googleapis.com/auth/trace.append" 
-
-# --project $PROJECT_ID \
-
 
 clear
 gcloud beta container \
@@ -131,6 +131,7 @@ gcloud config list
 
 ## Set up RBAC
 
+Update your `.kube/config` file with credentials:
 ```
 gcloud container clusters get-credentials $CLUSTER_NAME \
   --zone us-west1-a 
@@ -138,6 +139,7 @@ gcloud container clusters get-credentials $CLUSTER_NAME \
 
 
 Assure that you have cluster-admin privileges in your own cluster.
+
 Is this needed?
 
 ```
@@ -150,17 +152,21 @@ kubectl create clusterrolebinding owner-cluster-admin-binding \
 kubectl describe  clusterrolebindings owner-cluster-admin-binding
 ```
 
-Create the perms and credentials for talking to the apiserver
+
+Create a service account for the controllers:
 ```
 kubectl create serviceaccount blah-reboot-account
+
+# See what you made
+kubectl get serviceaccount blah-reboot-account -o yaml
+
 kubectl create clusterrolebinding binding-reboot-agent-name \
   --clusterrole=cluster-admin \
   --serviceaccount=default:blah-reboot-account
+  
+kubectl get clusterrolebinding binding-reboot-agent-name -o yaml
 
 ```
-
-Create a service account for the controllers;
-this
 
 
 ##  Coding prep
@@ -204,9 +210,11 @@ NODE_NAME=foo bin/reboot-agent --kubeconfig ~/.kube/config
 
 Can also try running in a docker context:
 ```
+docker images # to see the gittag
 docker run -d reboot-agent:{gittag}
 docker ps
 docker logs {containerID}
+docker kill {containerId}
 ```
 
 To launch on cluster:

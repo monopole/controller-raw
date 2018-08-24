@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/coreos/go-systemd/login1"
 	"github.com/monopole/kube-controller-demo/common"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,12 +18,14 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+// 	"github.com/coreos/go-systemd/login1"
+
 const nodeNameEnv = "NODE_NAME"
 
 func main() {
 	log.Println("Agent Version " + common.Version)
 	log.Println("Sleeping...")
-	time.Sleep(20 * time.Second)
+	time.Sleep(10 * time.Second)
 	log.Println("Working.")
 	// When running as a pod in-cluster, a kubeconfig is not needed. Instead this will make use of the service account injected into the pod.
 	// However, allow the use of a local kubeconfig as this can make local development & testing easier.
@@ -71,7 +72,7 @@ func main() {
 
 type rebootAgent struct {
 	client     kubernetes.Interface
-	dbusConn   *login1.Conn
+	// dbusConn   *login1.Conn
 	controller cache.Controller
 }
 

@@ -11,6 +11,7 @@ spec:
       labels:
         name: hoserface
     spec:
+      serviceAccountName: blah-reboot-account
       containers:
       - name: reboot-agent
         image: monopole/reboot-agent:60f72b0aad0ddd7c35b0ece058dec8720b62fd86-dirty
