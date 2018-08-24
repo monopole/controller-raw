@@ -1,5 +1,12 @@
 #!/bin/bash
 
+function whatImages {
+  for image in $(kubectl get pods --all-namespaces\
+     --output=jsonpath='{..image}'); do
+     echo $image
+  done
+}
+
 make clean
 make images
 
@@ -24,11 +31,11 @@ GVERSION=`./git-version.sh`
 pushAllToHub $GVERSION
 
 sed -i -E "s/(reboot-agent:).*/\1$GVERSION/" Examples/reboot-agent.yaml
-
+sed -i -E "s/(reboot-agent:).*/\1$GVERSION/" Examples/reboot-controller.yaml
 
 echo " "
 cat Examples/reboot-agent.yaml
 echo " "
-echo ready for
-echo kubectl apply -f Examples/reboot-agent.yaml
-echo kubectl get pods
+echo "Ready to: kubectl apply -f Examples/reboot-agent.yaml"
+
+

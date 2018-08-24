@@ -1,0 +1,47 @@
+# This is meant for giving blanket authorization
+# to things in the given namespace.
+
+# Namespace for the Controller
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: reboot-system
+---
+# RBAC permissions for the agents
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: applier-role
+rules:
+- apiGroups:
+  - apply.k8s.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - "apps"
+  resources:
+  - "deployments"
+  verbs:
+  - '*'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: applier-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: applier-role
+subjects:
+- kind: ServiceAccount
+  namespace: reboot-system
+  name: default
+---
