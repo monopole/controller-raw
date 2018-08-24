@@ -168,6 +168,12 @@ kubectl get clusterrolebinding binding-reboot-agent-name -o yaml
 
 ```
 
+After that, you must add 
+```
+      serviceAccountName: blah-reboot-account
+```
+to the `template/spec`, at the same indentation as `containers`,
+or the calls to list Nodes will fail.
 
 ##  Coding prep
 
@@ -203,6 +209,8 @@ Run this script to build and push the images to docker hub
 ./push.sh
 ```
 
+## Test the binary
+
 With the binaries built, this command should work:
 ```
 NODE_NAME=foo bin/reboot-agent --kubeconfig ~/.kube/config 
@@ -217,16 +225,57 @@ docker logs {containerID}
 docker kill {containerId}
 ```
 
-To launch on cluster:
+## Run it in cluster
+
 ```
 kubectl apply -f Examples/reboot-agent.yaml
 kubectl describe daemonset reboot-agent
 kubectl get pods
+
+# Pick any of the pods, dump its log:
+kubectl logs reboot-agent-9tb9h
+
+# In the log you see it prints its own node name,
+# which should match what you see this way:
+kubectl describe pod reboot-agent-9tb9h | grep Node:
+
 ```
+
+## Force a reboot
+
+```
+node=gke-yaksdee-colo-1-default-pool-8b04a446-9dh7
+
+kubectl annotate --overwrite node $node \
+    reboot-agent.v1.demo.local/reboot-now=yes
+
+
+kubectl describe node $node | grep -C 1 Annotations:
+kubectl logs reboot-agent-9tb9h
+```
+
+## Send the big controller out - its just a Deployment:
+
+```
+kubectl apply -f Examples/reboot-controller.yaml
+kubectl describe deployment reboot-controller
+kubectl get pods
+```
+
+Tell it to reboot a node:
+```
+kubectl annotate --overwrite node $node \
+    reboot-agent.v1.demo.local/reboot-requested=yes
+
+kubectl describe node $node | grep -C 1 Annotations:
+kubectl logs reboot-agent-9tb9h
+```
+
 
 Delete it:
 ```
 kubectl delete daemonset reboot-agent
+kubectl delete deployment reboot-controller
 ```
 
 

@@ -14,7 +14,7 @@ spec:
       serviceAccountName: blah-reboot-account
       containers:
       - name: reboot-agent
-        image: monopole/reboot-agent:60f72b0aad0ddd7c35b0ece058dec8720b62fd86-dirty
+        image: monopole/reboot-agent:d2f18115cef0ff5448edac607d25a67af96e1f61
         env:
           - name: NODE_NAME
             valueFrom:

@@ -30,8 +30,8 @@ GVERSION=`./git-version.sh`
 
 pushAllToHub $GVERSION
 
-sed -i -E "s/(reboot-agent:).*/\1$GVERSION/" Examples/reboot-agent.yaml
-sed -i -E "s/(reboot-agent:).*/\1$GVERSION/" Examples/reboot-controller.yaml
+sed -i -E "s/(monopole/reboot-agent:).*/\1$GVERSION/" Examples/reboot-agent.yaml
+sed -i -E "s/(monopole/reboot-controller:).*/\1$GVERSION/" Examples/reboot-controller.yaml
 
 echo " "
 cat Examples/reboot-agent.yaml

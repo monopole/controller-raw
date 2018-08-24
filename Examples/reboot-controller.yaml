@@ -1,11 +1,18 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: reboot-controller
 spec:
+  selector:
+    matchLabels:
+      name: pumpkinjack
   replicas: 1
   template:
+    metadata:
+      labels:
+        name: pumpkinjack
     spec:
+      serviceAccountName: blah-reboot-account
       containers:
       - name: reboot-controller
-        image: monopole/reboot-controller:hey
+        image: monopole/reboot-controller:d2f18115cef0ff5448edac607d25a67af96e1f61
