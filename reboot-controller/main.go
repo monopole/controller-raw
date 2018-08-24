@@ -21,7 +21,7 @@ import (
 )
 
 // TODO(aaron): make configurable and add MinAvailable
-const maxUnavailable = 1
+const maxUnavailable = 2
 
 func main() {
 	// When running as a pod in-cluster, a kubeconfig is not needed. Instead this will make use of the service account injected into the pod.
@@ -165,12 +165,16 @@ func (c *rebootController) process(key string) error {
 
 	log.Printf("Received update of node: %s\n", node.GetName())
 	if node.Annotations == nil {
+		log.Printf("No annotations\n")
 		return nil // If node has no annotations, then it doesn't need a reboot
 	}
 
 	if _, ok := node.Annotations[common.AnnoRebootRequested]; !ok {
+		log.Printf("No reboot requested annotation\n")
 		return nil // Node does not need reboot
 	}
+
+	log.Printf("Reboot requested!\n")
 
 	// Determine if we should reboot based on maximum number of unavailable nodes
 	unavailable, err := c.unavailableNodeCount()
@@ -182,7 +186,7 @@ func (c *rebootController) process(key string) error {
 		// TODO(aaron): We might want this case to retry indefinitely.
 		// Could create a specific error an check in handleErr()
 		return fmt.Errorf(
-			"Too many nodes unvailable (%d/%d). Skipping reboot of %s",
+			"Too many nodes unvailable (unavail=%d/ max=%d). Skipping reboot of %s",
 			unavailable, maxUnavailable, node.Name)
 	}
 
@@ -192,7 +196,9 @@ func (c *rebootController) process(key string) error {
 		return fmt.Errorf("Failed to make copy of node: %v", err)
 	}
 
-	log.Printf("Marking node %s for reboot\n", node.Name)
+	log.Printf("************ \n")
+	log.Printf("************ Marking node %s for reboot\n", node.Name)
+	log.Printf("************ \n")
 	nodeCopy.Annotations[common.AnnoRebootNow] = ""
 	if _, err := c.client.CoreV1().Nodes().Update(nodeCopy); err != nil {
 		return fmt.Errorf("Failed to set %s annotation: %v", common.AnnoRebootNow, err)

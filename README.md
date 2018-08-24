@@ -233,49 +233,55 @@ kubectl describe daemonset reboot-agent
 kubectl get pods
 
 # Pick any of the pods, dump its log:
-kubectl logs reboot-agent-9tb9h
+pod=reboot-agent-2ct7q
+
+kubectl logs $pod
 
 # In the log you see it prints its own node name,
 # which should match what you see this way:
-kubectl describe pod reboot-agent-9tb9h | grep Node:
+kubectl describe pod $pod | grep Node:
+
+# Set the node
+node=gke-yaksdee-colo-1-default-pool-8b04a446-rb82
 
 ```
 
-## Force a reboot
+## Force a reboot directly at the agent
 
 ```
-node=gke-yaksdee-colo-1-default-pool-8b04a446-9dh7
 
 kubectl annotate --overwrite node $node \
     reboot-agent.v1.demo.local/reboot-now=yes
 
 
 kubectl describe node $node | grep -C 1 Annotations:
-kubectl logs reboot-agent-9tb9h
+kubectl logs $pod
 ```
 
 ## Send the big controller out - its just a Deployment:
 
 ```
 kubectl apply -f Examples/reboot-controller.yaml
-kubectl describe deployment reboot-controller
 kubectl get pods
 ```
 
 Tell it to reboot a node:
 ```
+kubectl describe node $node | grep -C 1 Annotations:
+
 kubectl annotate --overwrite node $node \
     reboot-agent.v1.demo.local/reboot-requested=yes
 
 kubectl describe node $node | grep -C 1 Annotations:
-kubectl logs reboot-agent-9tb9h
+
+kubectl logs $pod
 ```
 
 
 Delete it:
 ```
-kubectl delete daemonset reboot-agent
-kubectl delete deployment reboot-controller
+kubectl delete daemonset reboot-agent; \
+  kubectl delete deployment reboot-controller
 ```
 
 
