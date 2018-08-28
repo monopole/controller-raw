@@ -1,20 +1,21 @@
 # Demo Controller
 
-Fork of aaronlevy/kube-controller-demo
+Fork and upgrade (to 1.10) of
+[aaronlevy/kube-controller-demo](https://github.com/aaronlevy/kube-controller-demo)
 
 
-Goal is to be able to force the reboot of a node without ssh'ing into the node.
+Goal: force reboot of a node via the API without ssh'ing into the node.
 
-Instead one could use `kubectl` like this:
-
+E.g.
 ```
 kubectl annotate --overwrite node \
     gke-chaos-default-pool-0db73b66-h772 \
     reboot-agent.v1.demo.local/reboot-now=yes
 ```
 
-To see what happens, scan the log of the pod on that node that corresponds
-to the controller:
+To watch events in this reboot process, scan the controller's log.
+The controller is a pod in a DaemonSet.
+
 
 ```
 kubectl logs reboot-agent-6grdw
@@ -24,23 +25,26 @@ kubectl logs reboot-agent-6grdw
 
 ### reboot-agent
 
-This is a controller.  It's expressed as an image held
-by a daemonSet, to force installation of one replica on each pod.
+This is a controller.
 
-As nodes added to cluster, a pod with the controller
-is automatically added too.
+It's expressed as an image held by a daemonSet, to force installation
+of one replica on each pod.  As nodes are added to a cluster, a pod
+with the controller is automatically added too.
 
-All it does is watch for a `reboot-now` annotation on a node -
-when it sees it, it removes the anno and adds the anno
-`reboot-in-progress`, then
-starts the reboot (or merely sleeps, simulating a reboot).
+All it does is watch for a `reboot-now` annotation on a node.
+
+When it sees it, it removes the anno and adds the anno
+`reboot-in-progress`, then starts the reboot (or merely sleeps,
+simulating a reboot).
 
 ### reboot-controller
 
-This is a
-A Deployment with numreplicas == 1, it watches for a node with the annotation
-`reboot-needed` (applied by a human).  It counts unavailable nodes, and has
-a loop
+Also a controller, no more or less so than the agent.
+
+It's a Deployment with numreplicas == 1.  It watches for a node with
+the annotation `reboot-needed` (applied, for example, by a human
+wanting to reboot the node).  It counts unavailable nodes, and has a
+loop
 
 > ```
 > while numUnvailable < maxUnavailable :
@@ -99,7 +103,7 @@ scopes=\
 "https://www.googleapis.com/auth/monitoring",\
 "https://www.googleapis.com/auth/servicecontrol",\
 "https://www.googleapis.com/auth/service.management.readonly",\
-"https://www.googleapis.com/auth/trace.append" 
+"https://www.googleapis.com/auth/trace.append"
 
 clear
 gcloud beta container \
@@ -129,12 +133,39 @@ gcloud config list
 ```
 
 
-## Set up RBAC
+## Create a service account for the controllers
+
+
+```
+kubectl create serviceaccount blah-reboot-account
+
+# See what you made
+kubectl get serviceaccount blah-reboot-account -o yaml
+
+kubectl create clusterrolebinding binding-reboot-agent-name \
+  --clusterrole=cluster-admin \
+  --serviceaccount=default:blah-reboot-account
+
+kubectl get clusterrolebinding binding-reboot-agent-name -o yaml
+
+```
+
+After that, you must add
+```
+      serviceAccountName: blah-reboot-account
+```
+to the `template/spec`, of `Examples/reboot-agent.yaml`
+at the same indentation as `containers`,
+or the calls to list Nodes will fail.
+
+
+
+## Skip this?
 
 Update your `.kube/config` file with credentials:
 ```
 gcloud container clusters get-credentials $CLUSTER_NAME \
-  --zone us-west1-a 
+  --zone us-west1-a
 ```
 
 
@@ -153,29 +184,7 @@ kubectl describe  clusterrolebindings owner-cluster-admin-binding
 ```
 
 
-Create a service account for the controllers:
-```
-kubectl create serviceaccount blah-reboot-account
-
-# See what you made
-kubectl get serviceaccount blah-reboot-account -o yaml
-
-kubectl create clusterrolebinding binding-reboot-agent-name \
-  --clusterrole=cluster-admin \
-  --serviceaccount=default:blah-reboot-account
-  
-kubectl get clusterrolebinding binding-reboot-agent-name -o yaml
-
-```
-
-After that, you must add 
-```
-      serviceAccountName: blah-reboot-account
-```
-to the `template/spec`, at the same indentation as `containers`,
-or the calls to list Nodes will fail.
-
-##  Coding prep
+##  Get the libraries in place
 
 Set up the repos correctly:
 ```
@@ -213,7 +222,7 @@ Run this script to build and push the images to docker hub
 
 With the binaries built, this command should work:
 ```
-NODE_NAME=foo bin/reboot-agent --kubeconfig ~/.kube/config 
+NODE_NAME=foo bin/reboot-agent --kubeconfig ~/.kube/config
 ```
 
 Can also try running in a docker context:
@@ -327,4 +336,3 @@ Build agent and controller binaries:
 Build agent and controller Docker images:
 
 `make clean images`
-
