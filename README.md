@@ -8,18 +8,14 @@ Goal: force reboot of a node via the API without ssh'ing into the node.
 
 E.g.
 ```
-kubectl annotate --overwrite node \
-    gke-chaos-default-pool-0db73b66-h772 \
+kubectl annotate --overwrite node $someNode \
     reboot-agent.v1.demo.local/reboot-now=yes
 ```
 
 To watch events in this reboot process, scan the controller's log.
-The controller is a pod in a DaemonSet.
+The controller is a pod in a DaemonSet, so just dump the logs
+of the appropriate pod (see below).
 
-
-```
-kubectl logs reboot-agent-6grdw
-```
 
 ## Two controllers
 
@@ -69,7 +65,7 @@ CLUSTER_NAME=yaksdee-colo-1
 ```
 
 
-## Do this to set context:
+## Define context
 
 ```
 gcloud auth application-default login
@@ -78,15 +74,6 @@ gcloud auth application-default login
 ```
 gcloud config set project $PROJECT_ID
 gcloud config list
-
-```
-
-## Delete a cluster
-
-```
-gcloud --quiet container clusters \
-  delete $CLUSTER_NAME \
-  --zone "us-west1-a"
 ```
 
 ## Create a cluster
@@ -105,10 +92,10 @@ scopes=\
 "https://www.googleapis.com/auth/service.management.readonly",\
 "https://www.googleapis.com/auth/trace.append"
 
-clear
 gcloud beta container \
   --project $PROJECT_ID \
   clusters create $CLUSTER_NAME \
+  --scopes $scopes \
   --zone "us-west1-a" \
   --num-nodes "6" \
   --username "admin" \
@@ -117,7 +104,6 @@ gcloud beta container \
   --image-type "COS" \
   --disk-type "pd-standard" \
   --disk-size "100" \
-  --scopes $scopes \
   --preemptible \
   --enable-cloud-logging \
   --enable-cloud-monitoring \
@@ -160,7 +146,7 @@ or the calls to list Nodes will fail.
 
 
 
-## Skip this?
+## Assure your own credentials
 
 Update your `.kube/config` file with credentials:
 ```
@@ -170,8 +156,8 @@ gcloud container clusters get-credentials $CLUSTER_NAME \
 
 
 Assure that you have cluster-admin privileges in your own cluster.
+Not needed if cluster created via process above.
 
-Is this needed?
 
 ```
 export ACCOUNT=$(gcloud info --format='value(config.account)')
@@ -184,7 +170,7 @@ kubectl describe  clusterrolebindings owner-cluster-admin-binding
 ```
 
 
-##  Get the libraries in place
+## Compile and push the images
 
 Set up the repos correctly:
 ```
@@ -218,7 +204,7 @@ Run this script to build and push the images to docker hub
 ./push.sh
 ```
 
-## Test the binary
+### Test the binary
 
 With the binaries built, this command should work:
 ```
@@ -234,7 +220,7 @@ docker logs {containerID}
 docker kill {containerId}
 ```
 
-## Run it in cluster
+## Create the reboot-agent
 
 ```
 kubectl apply -f Examples/reboot-agent.yaml
@@ -267,7 +253,7 @@ kubectl describe node $node | grep -C 1 Annotations:
 kubectl logs $pod
 ```
 
-## Send the big controller out - its just a Deployment:
+## Push the reboot controller
 
 ```
 kubectl apply -f Examples/reboot-controller.yaml
@@ -287,10 +273,21 @@ kubectl logs $pod
 ```
 
 
-Delete it:
+## Clean up
+
 ```
-kubectl delete daemonset reboot-agent; \
-  kubectl delete deployment reboot-controller
+kubectl delete daemonset reboot-agent
+kubectl delete deployment reboot-controller
+```
+Or nuke from orbit:
+
+
+## Delete a cluster
+
+```
+gcloud --quiet container clusters \
+  delete $CLUSTER_NAME \
+  --zone "us-west1-a"
 ```
 
 
@@ -318,21 +315,3 @@ kubectl delete daemonset reboot-agent; \
 
 - Memcached operator written in python (@pst)
   - https://github.com/kbst/memcached
-
-## Roadmap
-
-- Demonstrate using
-    - leader-election
-    - Third Party Resources
-    - Shared Informers
-    - Events
-
-## Building
-
-Build agent and controller binaries:
-
-`make clean all`
-
-Build agent and controller Docker images:
-
-`make clean images`
