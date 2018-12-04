@@ -26,13 +26,13 @@ clean:
 
 #	curl -X DELETE -u "$user:$pass" https://index.docker.io/v1/repositories/monopole/reboot-agent/
 
-bin/%: LDFLAGS=-X github.com/monopole/kube-controller-demo/common.Version=$(shell $(CURDIR)/git-version.sh)
+bin/%: LDFLAGS=-X github.com/monopole/controller-raw/common.Version=$(shell $(CURDIR)/git-version.sh)
 bin/%: $(GOFILES)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux \
 	go build -ldflags "$(LDFLAGS)" -o $@ -a -installsuffix cgo $(notdir $@)/main.go
 
 #	mkdir -p $(dir $@)
-#	GOOS=$(word 1, $(subst /, ,$*)) GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $@ github.com/monopole/kube-controller-demo/$(notdir $@)
+#	GOOS=$(word 1, $(subst /, ,$*)) GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $@ github.com/monopole/controller-raw/$(notdir $@)
 
 
 .PHONY: dockerrun

@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/monopole/kube-controller-demo/common"
+	"github.com/monopole/controller-raw/common"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -71,16 +71,16 @@ func main() {
 }
 
 type rebootAgent struct {
-	client     kubernetes.Interface
+	client kubernetes.Interface
 	// dbusConn   *login1.Conn
 	controller cache.Controller
 }
 
 func newRebootAgent(nodeName string,
-	client kubernetes.Interface /*, dbusConn *login1.Conn */ ) *rebootAgent {
+	client kubernetes.Interface /*, dbusConn *login1.Conn */) *rebootAgent {
 	agent := &rebootAgent{
-		client:   client,
-	//	dbusConn: dbusConn,
+		client: client,
+		//	dbusConn: dbusConn,
 	}
 
 	// We only care about updates to "self" so create a field selector

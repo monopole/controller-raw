@@ -15,4 +15,4 @@ spec:
       serviceAccountName: blah-reboot-account
       containers:
       - name: reboot-controller
-        image: monopole/reboot-controller:a76ff79cd7509e64708ee5b358d23f3207b08caf
+        image: monopole/reboot-controller:ee360f28015ff85d3f57c86baf53a9bc03e1b805

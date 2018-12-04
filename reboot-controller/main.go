@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/monopole/kube-controller-demo/common"
+	"github.com/monopole/controller-raw/common"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
